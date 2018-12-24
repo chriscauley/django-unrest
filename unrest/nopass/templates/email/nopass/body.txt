@@ -1,0 +1,11 @@
+{% load i18n %}{% autoescape off %}
+{% blocktrans %}You're receiving this email because a login request for this email was made on {{ site_name }}. If you did not make this request, you can safely ignore this email.{% endblocktrans %}
+
+{% trans "Please use this link to login. It will be valid for 5 minutes." %}
+{{ protocol }}://{{ domain }}{% url 'nopass_login' uidb64=uid token=token %}
+
+{% trans "Thanks for using our site!" %}
+
+The {{ site_name }} team
+
+{% endautoescape %}
