@@ -15,8 +15,8 @@ def bad_token(request):
     return HttpResponse("<h1>Bad Token</h1><p>{}</p>".format(message))
 
 
-def create_account(request):
-    data = json.loads(request.body.decode("utf-8"))
+def create(request):
+    data = json.loads(request.body.decode("utf-8") or "{}")
     username = email = data.get("email",None)
     User = get_user_model()
     if email and User.objects.filter(email=email):
@@ -47,7 +47,7 @@ def change_email(request):
     return JsonResponse({"success": "Email address updated"})
 
 
-def send_login(request):
+def send(request):
     data = json.loads(request.body.decode("utf-8"))
     form = PasswordResetForm(data)
     if form.is_valid():
@@ -86,5 +86,5 @@ def complete_login(request, uidb64=None, token=None):
         # this forces them to change password
         user.set_unusable_password()
     else:
-        redirect_url = reverse("bad_token")
+        redirect_url = reverse("nopass_bad_token")
     return HttpResponseRedirect(redirect_url)
