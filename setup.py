@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setup(
   name = 'lablackey',
   packages = ['lablackey','lablackey.db'],
-  version = '0.1.5',
+  version = '0.1.6',
   description = 'A collection of tools for django',
   long_description=long_description,
   long_description_content_type="text/markdown",

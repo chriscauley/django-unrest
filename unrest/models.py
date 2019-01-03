@@ -7,9 +7,11 @@ from django.db import models
 from django.contrib.postgres.fields import JSONField
 
 from unrest.managers import RequestManager, UserRequestManager
+import json
 
 def as_json(self):
   out = { f: getattr(self,f) for f in self.json_fields }
+  out.update(**out.pop("data",{}))
   for f in self.fk_json_fields:
     if getattr(self,f):
       out[f] = getattr(self,f).as_json
@@ -24,6 +26,8 @@ class JsonMixin(object):
   fk_json_fields = []
   as_json = property(as_json)
 
+_hash = lambda data: hash(json.dumps(data,sort_keys=True))
+
 class JsonModel(models.Model,JsonMixin):
   created = models.DateTimeField(auto_now_add=True)
   data_hash = models.BigIntegerField()
@@ -32,8 +36,18 @@ class JsonModel(models.Model,JsonMixin):
 
   def save(self,*args,**kwargs):
     if not self.data_hash:
-      self.data_hash = hash(json.dumps(self.data,sort_keys=True))
+      self.data_hash = _hash(self.data)
     super().save(*args,**kwargs)
+
+  @classmethod
+  def from_data(cls,data,**kwargs):
+    data_hash = _hash(data)
+    instance = cls.objects.filter(data=data).first()
+    return instance or cls.objects.create(
+      data=data,
+      data_hash=data_hash,
+      **kwargs
+    )
 
   class Meta:
     abstract = True

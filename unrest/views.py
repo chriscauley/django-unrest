@@ -1,6 +1,6 @@
 from django.apps import apps
 from django.http import JsonResponse, HttpResponseRedirect
-
+import json
 
 def redirect(request,url=None):
     return HttpResponseRedirect(url)
@@ -8,6 +8,11 @@ def redirect(request,url=None):
 def list_view(request,app_name,model_name):
     app = apps.get_app_config(app_name)
     model = app.get_model(model_name)
+    data = json.loads(request.body.decode('utf-8') or "{}")
+    if data:
+        obj = model.from_data(data)
+        obj.save()
+        return JsonResponse(obj.as_json)
     items = model.objects.request_filter(request)
     return JsonResponse({
         'results': [i.as_json for i in items],
