@@ -6,6 +6,7 @@ class RequestManager(models.Manager):
 
 class UserRequestManager(models.Manager):
     def request_filter(self,request,*args,**kwargs):
-        if not 'user' in kwargs:
-            kwargs['user'] = request.user
+        if not request.user.is_authenticated:
+            return self.none()
+        kwargs['user'] = request.user
         return self.filter(*args,**kwargs)

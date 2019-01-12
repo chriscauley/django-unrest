@@ -35,12 +35,11 @@ class JsonModel(models.Model,JsonMixin):
   objects = RequestManager()
 
   def save(self,*args,**kwargs):
-    if not self.data_hash:
-      self.data_hash = _hash(self.data)
+    self.data_hash = _hash(self.data)
     super().save(*args,**kwargs)
 
   @classmethod
-  def from_data(cls,data,**kwargs):
+  def from_data(cls,data,request=None,**kwargs):
     data_hash = _hash(data)
     instance = cls.objects.filter(data=data).first()
     return instance or cls.objects.create(
@@ -57,3 +56,8 @@ class UserModel(JsonModel):
   objects = UserRequestManager()
   class Meta:
     abstract = True
+
+  @classmethod
+  def from_data(cls,data,request=None,**kwargs):
+    kwargs['user'] = request.user
+    return super().from_data(data,request=None,**kwargs)

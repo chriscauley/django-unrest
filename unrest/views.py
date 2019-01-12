@@ -10,7 +10,11 @@ def list_view(request,app_name,model_name):
     model = app.get_model(model_name)
     data = json.loads(request.body.decode('utf-8') or "{}")
     if data:
-        obj = model.from_data(data)
+        id = data.pop("id",None)
+        if id:
+            obj = model.from_data(data,request=request,id=id)
+        else:
+            obj = model.from_data(data,request=request)
         obj.save()
         return JsonResponse(obj.as_json)
     items = model.objects.request_filter(request)
