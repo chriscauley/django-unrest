@@ -40,7 +40,10 @@ def change_email(request):
     User = get_user_model()
     user = request.user
     if User.objects.exclude(id=user.id).filter(email=email):
-        return JsonResponse({'error': 'Another account already has that email.'},status=400)
+        return JsonResponse(
+            {'error': 'Another account already has that email.'},
+            status=400
+        )
     user = request.user
     user.email = user.username = email
     user.save()
