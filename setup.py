@@ -1,11 +1,11 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
   name = 'django-unrest',
-  packages = ['unrest'],
-  version = '0.0.1c',
+  packages = find_packages(),
+  version = '0.0.3a',
   description = 'A collection of tools for django',
-  long_description="", #long_description,
+  long_description="",
   long_description_content_type="text/markdown",
   author = 'Chris Cauley',
   author_email = 'chris@lablackey.com',
