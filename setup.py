@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
   name = 'django-unrest',
   packages = ['unrest'],
-  version = '0.0.1b',
+  version = '0.0.1c',
   description = 'A collection of tools for django',
   long_description="", #long_description,
   long_description_content_type="text/markdown",
