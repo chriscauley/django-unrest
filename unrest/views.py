@@ -1,16 +1,32 @@
 from django.apps import apps
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.static import serve
+
 import json
 import subprocess
+import os
 
 @ensure_csrf_cookie
 def index(request, path='dist/index.html'):
-    f = open(path,'r')
-    response = HttpResponse(f.read())
+    response = serve(
+        request,
+        os.path.basename(path),
+        os.path.dirname(path)
+    )
     _hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
     response.set_cookie("GIT_HASH", _hash.decode('utf-8').strip())
     return response
+
+def favicon(request):
+    path = finders.find(getattr(settings,'FAVICON','favicon.ico'))
+    return serve(
+        request,
+        os.path.basename(path),
+        os.path.dirname(path)
+    )
 
 def redirect(request,url=None):
     return HttpResponseRedirect(url)
