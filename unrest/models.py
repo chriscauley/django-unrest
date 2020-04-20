@@ -3,13 +3,14 @@
 # review and decide which to keep
 
 from django.conf import settings
-from django.db import models
 from django.contrib.postgres.fields import JSONField
+from django.db import models
+from django.db.models.fields.files import ImageFieldFile
 
 from unrest.managers import RequestManager, UserRequestManager
 import json
 
-def as_json(self):
+def as_json(self, json_fields=None):
   out = { f: getattr(self,f) for f in self.json_fields }
   out.update(**out.pop("data",{}))
   for f in self.fk_json_fields:
@@ -28,7 +29,7 @@ class JsonMixin(object):
 
 _hash = lambda data: hash(json.dumps(data,sort_keys=True))
 
-class JsonModel(models.Model,JsonMixin):
+class JsonModel(models.Model, JsonMixin):
   created = models.DateTimeField(auto_now_add=True)
   data_hash = models.BigIntegerField()
   data = JSONField(default=dict)
@@ -61,3 +62,25 @@ class UserModel(JsonModel):
   def from_data(cls,data,request=None,**kwargs):
     kwargs['user'] = request.user
     return super().from_data(data,request=None,**kwargs)
+
+
+class BaseModel(models.Model):
+  class Meta:
+    abstract = True
+
+  def to_json(self, attrs):
+    attrs = attrs or self.json_fields
+    result = {}
+
+    for attr in attrs:
+      value = getattr(self, attr)
+
+      # fields can be callable, eg my_object.get_absolute_url()
+      if callable(value):
+        value = value()
+
+      # Handle fields that are not serializeable by DjangoJSONEncoder
+      if isinstance(value, ImageFieldFile):
+        value = value.url
+      result[attr] = value
+    return result
