@@ -71,7 +71,7 @@ def user_json(request):
     user = request.user
     if not user.is_authenticated:
         return JsonResponse({})
-    keys = ['id','username','email','is_superuser','is_staff']
+    keys = ['id', 'username', 'email', 'is_superuser', 'is_staff']
     return JsonResponse({
         'user': { k: getattr(user,k) for k in keys },
     })
