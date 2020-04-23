@@ -69,6 +69,12 @@ def field_to_schema(field):
   if schema.get('minLength', 0) is None:
     schema.pop('minLength')
 
+  if field_type == 'ImageField':
+    # RJSF confuses length of file and length of filename, eg "megapixel.png" is 1e6 characters long
+    schema.pop('maxLength', None)
+    # RJSF is confusde by default None on file field
+    schema.pop('default', None)
+
   # Set __django_form_field_cls keyword
   schema['__django_form_field_cls'] = field_type
   schema['__widget'] = field.widget.__class__.__name__
@@ -89,5 +95,8 @@ def form_to_schema(form):
   for name, field in schema['properties'].items():
     if field.pop('required', None):
       schema['required'].append(name)
+
+  if hasattr(form, 'form_title'):
+    schema['title'] = form.form_title
 
   return schema
