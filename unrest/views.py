@@ -66,12 +66,3 @@ def list_view(request,app_name,model_name):
     return JsonResponse({
         'results': [i.as_json for i in items],
     })
-
-def user_json(request):
-    user = request.user
-    if not user.is_authenticated:
-        return JsonResponse({})
-    keys = ['id', 'username', 'email', 'is_superuser', 'is_staff']
-    return JsonResponse({
-        'user': { k: getattr(user,k) for k in keys },
-    })

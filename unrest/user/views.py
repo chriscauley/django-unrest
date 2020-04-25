@@ -11,6 +11,16 @@ def form_to_rjsf_response(form):
   return {'errors': form.errors.get_json_data()}
 
 
+def user_json(request):
+    user = request.user
+    if not user.is_authenticated:
+        return JsonResponse({})
+    keys = ['id', 'username', 'email', 'is_superuser', 'is_staff']
+    return JsonResponse({
+        'user': { k: getattr(user,k) for k in keys },
+    })
+
+
 def login_ajax(request):
   data = json.loads(request.body.decode('utf-8') or "{}")
   form = AuthenticationForm(request, data)

@@ -86,3 +86,11 @@ class BaseModel(models.Model):
         value = value.url
       result[attr] = value
     return result
+
+def _choices(choices):
+  processed = []
+  for choice in choices:
+    if not isinstance(choice, (list, tuple)):
+      choice = [choice, choice]
+    processed.append(choice)
+  return processed
