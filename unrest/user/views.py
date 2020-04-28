@@ -16,10 +16,10 @@ def user_json(request):
     if not user.is_authenticated:
         return JsonResponse({})
     keys = ['id', 'username', 'email', 'is_superuser', 'is_staff']
-    return JsonResponse({
-        'user': { k: getattr(user,k) for k in keys },
-    })
-
+    data = { k: getattr(user,k) for k in keys }
+    if hasattr(user_json, 'get_extra'):
+        data.update(user_json.get_extra(user))
+    return JsonResponse({ 'user': data })
 
 def login_ajax(request):
   data = json.loads(request.body.decode('utf-8') or "{}")
