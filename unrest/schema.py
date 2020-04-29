@@ -75,6 +75,10 @@ def field_to_schema(field):
     # RJSF is confusde by default None on file field
     schema.pop('default', None)
 
+  for field_attr in ['maxLength', 'title']:
+    if schema.get(field_attr, '') is None:
+      schema.pop(field_attr)
+
   # Set __django_form_field_cls keyword
   schema['__django_form_field_cls'] = field_type
   schema['__widget'] = field.widget.__class__.__name__
