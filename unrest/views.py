@@ -20,6 +20,19 @@ def index(request, path='dist/index.html'):
     response.set_cookie("GIT_HASH", _hash.decode('utf-8').strip())
     return response
 
+@ensure_csrf_cookie
+def spa(request, *args, **kwargs):
+    path = 'dist/index.html'
+    response = serve(
+        request,
+        os.path.basename(path),
+        os.path.dirname(path)
+    )
+    _hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
+    response.set_cookie("GIT_HASH", _hash.decode('utf-8').strip())
+    return response
+
+
 def favicon(request):
     path = finders.find(getattr(settings,'FAVICON','favicon.ico'))
     return serve(
