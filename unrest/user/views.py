@@ -24,6 +24,7 @@ def user_json(request):
 
 def login_ajax(request):
   data = json.loads(request.body.decode('utf-8') or "{}")
+  data['username'] = data['email']
   form = AuthenticationForm(request, data)
   if form.is_valid():
     login(request, form.get_user())
