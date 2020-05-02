@@ -8,6 +8,5 @@ urlpatterns = [
     path('api/auth/login/', views.login_ajax),
     path('api/auth/signup/', views.signup_ajax),
     path('api/auth/logout/', views.logout_ajax),
-    path('api/auth/schema/<form_name>/', views.schema_form),
     path('reset-password-confirm/<uidb64>/<token>/', spa, name='password_reset_confirm'),
 ]
