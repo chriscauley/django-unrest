@@ -1,0 +1,33 @@
+<body style="margin: 0"></body>
+<script>
+const colors = [
+  '08f',
+  '0ff',
+  '0f8',
+
+  '0f0',
+
+  '8f0',
+  'ff0',
+  'f80',
+
+  'f00',
+
+  'f08',
+  'f0f',
+  '80f',
+
+  '00f',
+];
+
+[0,1,2,3,4,5,6,7,9,0,1,2,3,4,5,6,7,8,9].forEach(() => colors.forEach(color => {
+  const span = document.createElement('span')
+  span.style.backgroundColor = "#"+color
+  span.style.display = "inline-block"
+  const img = document.createElement('img')
+  img.src = "./ur-"+color+".png"
+  span.appendChild(img)
+  document.body.appendChild(span)
+}))
+
+</script>
