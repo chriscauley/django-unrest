@@ -1,12 +1,33 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login
-from django.contrib.auth.forms import SetPasswordForm
+from django.contrib.auth.forms import SetPasswordForm, AuthenticationForm, PasswordResetForm, PasswordChangeForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import is_safe_url, urlsafe_base64_decode
+from unrest import schema
 
 
+schema.register(PasswordChangeForm)
+
+
+@schema.register
+class LoginForm(AuthenticationForm):
+  form_title = "Please Login to Continue"
+  def __init__(self, *args, **kwargs):
+    # Authentication uses request as an argument, unrest sets self.request after initialization
+    return super().__init__(None, *args, **kwargs)
+  def save(self):
+    login(self.request, self.user_cache)
+    return self.user_cache
+
+@schema.register
+class PasswordResetForm(PasswordResetForm):
+  form_title = 'Forgot Password'
+
+
+@schema.register
 class SignupForm(forms.ModelForm):
+  form_title = "Create an Account"
   def clean_email(self):
     email = self.cleaned_data.get('email', '')
     exists = get_user_model().objects.filter(username__iexact=email)
@@ -21,12 +42,14 @@ class SignupForm(forms.ModelForm):
     user.username = self.cleaned_data['email']
     if commit:
       user.save()
+      login(self.request, user)
     return user
   class Meta:
     model = get_user_model()
     fields = ('email', 'password')
 
 
+@schema.register
 class PasswordResetConfirmForm(SetPasswordForm):
   token = forms.CharField(widget=forms.HiddenInput())
   uidb64 = forms.CharField(widget=forms.HiddenInput())

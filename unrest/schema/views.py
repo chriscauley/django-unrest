@@ -32,12 +32,14 @@ def schema_form(request, form_name, method=None, content_type=None):
     method = method or request.method
     content_type = content_type or request.headers['Content-Type']
     form_class = FORMS[form_name]
-    if getattr(form_class.Meta, 'login_required', None) and not request.user.is_authenticated:
+    _meta  = getattr(form_class, 'Meta', object())
+    if getattr(_meta, 'login_required', None) and not request.user.is_authenticated:
         return JsonResponse({'error': 'You must be logged in to do this'}, status=403)
 
     if request.method == "POST":
         if content_type == 'application/json':
-            form = form_class(json.loads(request.body.decode('utf-8') or "{}"))
+            data = json.loads(request.body.decode('utf-8') or "{}")
+            form = form_class(data)
         else:
             form = form_class(request.POST, request.FILES)
 

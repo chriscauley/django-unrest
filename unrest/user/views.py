@@ -1,10 +1,9 @@
 import json
-from django.http import JsonResponse, Http404
-from django.contrib.auth import logout, login
-from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, PasswordChangeForm
+from django.http import JsonResponse
+from django.contrib.auth import logout
 
-from unrest import schema
-from .forms import SignupForm, PasswordResetConfirmForm
+# This registers all the form views
+import unrest.user.forms # noqa
 
 def user_json(request):
     user = request.user
@@ -16,29 +15,6 @@ def user_json(request):
         data.update(user_json.get_extra(user))
     return JsonResponse({ 'user': data })
 
-def login_ajax(request):
-  data = json.loads(request.body.decode('utf-8') or "{}")
-  data['username'] = data['email']
-  form = AuthenticationForm(request, data)
-  if form.is_valid():
-    login(request, form.get_user())
-  return schema.FormResponse(form)
-
-
-def signup_ajax(request):
-  data = json.loads(request.body.decode('utf-8') or "{}")
-  form = SignupForm(data)
-  if form.is_valid():
-    user = form.save()
-    login(request, user)
-  return schema.FormResponse(form)
-
-
 def logout_ajax(request):
   logout(request)
   return JsonResponse({})
-
-
-schema.register(PasswordResetForm)
-schema.register(PasswordChangeForm)
-schema.register(PasswordResetConfirmForm)
