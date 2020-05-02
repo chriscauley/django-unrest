@@ -1,7 +1,7 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 
 from .utils import form_to_schema
-
+import json
 
 FORMS = {}
 
@@ -22,18 +22,25 @@ def register(form, form_name=None):
         raise ValueError(e)
 
     FORMS[form_name] = form
+    return form
 
 
-def schema_form(request, form_name, method=None):
+def schema_form(request, form_name, method=None, content_type=None):
     if not form_name in FORMS:
         raise Http404(f"Form with name {form_name} does not exist")
 
     method = method or request.method
+    content_type = content_type or request.headers['Content-Type']
     form_class = FORMS[form_name]
+    if getattr(form_class.Meta, 'login_required', None) and not request.user.is_authenticated:
+        return JsonResponse({'error': 'You must be logged in to do this'}, status=403)
+
     if request.method == "POST":
-        # TODO handle form data differently by content type
-        data = request.POST or json.loads(request.body.decode('utf-8') or "{}")
-        form = form_class(data, request.FILES)
+        if content_type == 'application/json':
+            form = form_class(json.loads(request.body.decode('utf-8') or "{}"))
+        else:
+            form = form_class(request.POST, request.FILES)
+
         form.request = request
         if form.is_valid():
             instance = form.save()
