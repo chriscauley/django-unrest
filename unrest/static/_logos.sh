@@ -13,7 +13,7 @@ convert logo-cyan-iris.png -modulate 100,100,50.000 ur-8f0.png
 convert logo-cyan-iris.png -modulate 100,100,66.666 ur-0f0.png
 convert logo-cyan-iris.png -modulate 100,100,83.333 ur-0f8.png
 
-for i in favicon.ico `ls ur-*.png`;
+for i in favicon.ico `ls ur-*.png` ur-pink.png favicon.ico;
 do
     convert $i \( +clone  -background white  -shadow 80x1+0+0 \) \
             +swap -background none -layers merge  +repage $i

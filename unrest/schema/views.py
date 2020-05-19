@@ -30,7 +30,7 @@ def schema_form(request, form_name, method=None, content_type=None):
         raise Http404(f"Form with name {form_name} does not exist")
 
     method = method or request.method
-    content_type = content_type or request.headers['Content-Type']
+    content_type = content_type or request.headers.get('Content-Type', None)
     form_class = FORMS[form_name]
     _meta  = getattr(form_class, 'Meta', object())
     if getattr(_meta, 'login_required', None) and not request.user.is_authenticated:
