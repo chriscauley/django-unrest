@@ -75,7 +75,7 @@ def field_to_schema(field):
     # RJSF is confusde by default None on file field
     schema.pop('default', None)
 
-  for field_attr in ['maxLength', 'title']:
+  for field_attr in ['maxLength', 'title', 'maximum', 'minimum', 'default']:
     if schema.get(field_attr, '') is None:
       schema.pop(field_attr)
 
