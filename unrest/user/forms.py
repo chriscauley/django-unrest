@@ -12,7 +12,6 @@ schema.register(PasswordChangeForm)
 
 @schema.register
 class LoginForm(AuthenticationForm):
-  form_title = "Please Login to Continue"
   def __init__(self, *args, **kwargs):
     # Authentication uses request as an argument, unrest sets self.request after initialization
     return super().__init__(None, *args, **kwargs)
@@ -27,7 +26,6 @@ class PasswordResetForm(PasswordResetForm):
 
 @schema.register
 class SignupForm(forms.ModelForm):
-  form_title = "Create an Account"
   def clean_email(self):
     email = self.cleaned_data.get('email', '')
     exists = get_user_model().objects.filter(username__iexact=email)
