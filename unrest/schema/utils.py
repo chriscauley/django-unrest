@@ -1,8 +1,9 @@
 # loosely based on: https://github.com/Cahersan/django-schemulator
 from collections import OrderedDict
 from django import forms
+from django.db.models.fields.files import ImageFieldFile
 
-
+# django keywords to rjsf keywords
 KEYWORDS = {
   #Base keywords
   "label": "title",
@@ -19,13 +20,16 @@ KEYWORDS = {
   "max_value": "maximum",
 }
 
+# django fields to rjsf types
 FIELD_TO_TYPE = {
   'IntegerField': 'integer',
   'BooleanField': 'boolean',
   'BooleanField': 'number',
-  'TypedChoiceField': ''
+  'TypedChoiceField': '',
+  'ModelChoiceField': 'integer',
 }
 
+# django fields to rjsf formats
 FIELD_TO_FORMAT = {
   'EmailField': 'email',
   'DateTimeField': 'date-time',
@@ -75,6 +79,14 @@ def field_to_schema(field):
     # RJSF is confusde by default None on file field
     schema.pop('default', None)
 
+  if field_type == 'ModelMultipleChoiceField':
+    schema['type'] = 'array'
+    schema['items'] = {
+      'type': 'integer',
+      'enum': schema.pop('enum'),
+      'enumNames': schema.pop('enumNames'),
+    }
+
   for field_attr in ['maxLength', 'title', 'maximum', 'minimum', 'default']:
     if schema.get(field_attr, '') is None:
       schema.pop(field_attr)
@@ -99,6 +111,19 @@ def form_to_schema(form):
   for name, field in schema['properties'].items():
     if field.pop('required', None):
       schema['required'].append(name)
+    if getattr(form, 'instance', None):
+      if hasattr(form.instance, name) and getattr(form.instance, name) != None:
+        value = getattr(form.instance, name)
+        if isinstance(value, ImageFieldFile):
+          if not value:
+            continue #empty file field, ignore
+          else:
+            value = value.url
+        if hasattr(value, 'pk'):
+          value = value.pk
+        if field.__class__.__name__ == 'ModelMultipleChoiceField':
+          value = [obj.id for obj in value.all()]
+        schema['properties'][name]['default'] = value
 
   if hasattr(form, 'form_title'):
     schema['title'] = form.form_title
