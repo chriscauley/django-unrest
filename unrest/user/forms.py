@@ -1,75 +1,89 @@
+import random
+
 from django import forms
-from django.contrib.auth import get_user_model
 from django.contrib.auth import login
-from django.contrib.auth.forms import SetPasswordForm, AuthenticationForm, PasswordResetForm, PasswordChangeForm
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import is_safe_url, urlsafe_base64_decode
-from unrest import schema
+from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 
-
-schema.register(PasswordChangeForm)
-
-
-@schema.register
-class LoginForm(AuthenticationForm):
-  def __init__(self, *args, **kwargs):
-    # Authentication uses request as an argument, unrest sets self.request after initialization
-    return super().__init__(None, *args, **kwargs)
-  def save(self):
-    login(self.request, self.user_cache)
-    return self.user_cache
+from server.api.auth import get_reset_user
+from server.user.models import User
+from server import schema
 
 @schema.register
 class PasswordResetForm(PasswordResetForm):
-  form_title = 'Forgot Password'
-
-
-@schema.register
-class SignupForm(forms.ModelForm):
-  def clean_email(self):
-    email = self.cleaned_data.get('email', '')
-    exists = get_user_model().objects.filter(username__iexact=email)
-    exists = exists or get_user_model().objects.filter(email__iexact=email)
-    if exists:
-      e = "A user with that email already exists. Please use login or password recovery below."
-      raise forms.ValidationError(e)
-    return email
-  def save(self, commit=True):
-    user = super().save(commit=commit)
-    user.set_password(self.cleaned_data['password'])
-    user.username = self.cleaned_data['email']
-    if commit:
-      user.save()
-      login(self.request, user)
-    return user
-  class Meta:
-    model = get_user_model()
-    fields = ('email', 'password')
-
+    # the django password reset form uses a bunch of kwargs on save, making it very non-standard
+    # we hack them in here so that this plays nice with the rest of the schema form flow
+    def save(self, *args, **kwargs):
+        kwargs['request'] = self.request
+        return super().save(*args, **kwargs)
 
 @schema.register
-class PasswordResetConfirmForm(SetPasswordForm):
-  token = forms.CharField(widget=forms.HiddenInput())
-  uidb64 = forms.CharField(widget=forms.HiddenInput())
+class SetPasswordForm(SetPasswordForm):
+    # In django, token validation is done in the view and user is passed into the form
+    # this does all that in clean instead to make it fit into schema form flow
+    def __init__(self, *args, **kwargs):
+        super().__init__(None, *args, **kwargs)
+        del self.fields['new_password1'].help_text
 
-  def __init__(self, *args, **kwargs):
-    # Setpassword deviates from usual Forms by having user as first argument. This undoes that
-    super().__init__(None, *args, **kwargs)
+    def clean(self):
+        uidb64 = self.request.session.get('reset-uidb64', '')
+        token = self.request.session.get('reset-token', '')
+        self.user = get_reset_user(uidb64, token)
+        if not self.user:
+            raise forms.ValidationError('This password reset token has expired')
+        return self.cleaned_data
 
-  def clean(self):
-    data = self.cleaned_data
-    UserModel = get_user_model()
+    def save(self, commit=True):
+        # password reset token is invalid after save. Remove from session
+        user = super().save(commit)
+        self.request.session.pop('reset-uidb64', None)
+        self.request.session.pop('reset-token', None)
+        login(self.request, user)
+        return user
 
-    try:
-      uid = urlsafe_base64_decode(data['uidb64']).decode()
-      self.user = UserModel._default_manager.get(pk=uid)
-    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
-      raise forms.ValidationError("The password reset link you are using is invalid.")
+def validate_unique(attribute, value, exclude={}):
+    users = User.objects.filter(**{attribute: value})
+    if exclude:
+        users = users.exclude(**exclude)
+    user = users.first()
+    if user:
+        raise forms.ValidationError(f'A user with this {attribute} already exists.')
 
-    if not default_token_generator.check_token(self.user, data['token']):
-      raise forms.ValidationError("The password reset link you are using is expired.")
-    return data
+@schema.register
+class SignUpForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        del self.fields['username'].help_text
+        self.fields['email'].required = True
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        validate_unique('username', username)
+        return username
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        validate_unique('email', email)
+        return email
+    def save(self, commit=True):
+        user = super().save(commit)
+        user.set_password(self.cleaned_data['password'])
+        if commit:
+            user.save()
+        login(self.request,  user)
+        return user
+    class Meta:
+        fields = ('username', 'email', 'password')
+        model = User
 
-  def save(self, *args, **kwargs):
-    super().save(*args, **kwargs)
-    login(self.request, self.user)
+@schema.register
+class LoginForm(forms.Form):
+    username = forms.CharField(label='Username', max_length=150)
+    password = forms.CharField(label='Password', max_length=128, widget=forms.PasswordInput)
+    def clean(self):
+        username = self.cleaned_data['username']
+        user = User.objects.filter(username=username).first()
+        if user:
+            if user.check_password(self.cleaned_data['password']):
+                self.user = user
+                return self.cleaned_data
+        raise forms.ValidationError("Username and password do not match")
+    def save(self, commit=True):
+        login(self.request, self.user)
