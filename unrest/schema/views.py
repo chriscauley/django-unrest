@@ -5,11 +5,6 @@ import json
 
 FORMS = {}
 
-def FormResponse(form):
-    if not form.errors:
-        return JsonResponse({})
-    return JsonResponse({'errors': form.errors.get_json_data()})
-
 
 def register(form, form_name=None):
     if isinstance(form, str):
@@ -53,7 +48,7 @@ def schema_form(request, form_name, object_id=None, method=None, content_type=No
             if instance:
                 data = {'id': instance.id, 'name': str(instance)}
             return JsonResponse(data)
-        return FormResponse(form)
-    schema = form_to_schema(FORMS[form_name]())
+        return JsonResponse({'errors': form.errors.get_json_data()}, status_code=400)
+    schema = form_to_schema(form_class(**kwargs))
     return JsonResponse({'schema': schema})
 
