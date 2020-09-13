@@ -12,7 +12,7 @@ def register(form, form_name=None):
         return lambda actual_form: register(actual_form, form_name=form)
     form_name = form_name or form.__name__
     old_form = FORMS.get(form_name, form)
-    if form != old_form:
+    if repr(form) != repr(old_form):
         e = f"Form with name {form_name} has already been registered.\nOld: {old_form}\nNew:{form}"
         raise ValueError(e)
 

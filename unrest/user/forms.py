@@ -1,12 +1,23 @@
 import random
 
 from django import forms
-from django.contrib.auth import login
+from django.contrib.auth import login, get_user_model
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
 
-from server.api.auth import get_reset_user
-from server.user.models import User
-from server import schema
+from unrest import schema
+
+def get_reset_user(uidb64, token):
+    User = get_user_model()
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist, ValidationError):
+        return None
+
+    if default_token_generator.check_token(user, token):
+        return user
 
 @schema.register
 class PasswordResetForm(PasswordResetForm):
@@ -41,7 +52,7 @@ class SetPasswordForm(SetPasswordForm):
         return user
 
 def validate_unique(attribute, value, exclude={}):
-    users = User.objects.filter(**{attribute: value})
+    users = get_user_model().objects.filter(**{attribute: value})
     if exclude:
         users = users.exclude(**exclude)
     user = users.first()
@@ -71,7 +82,7 @@ class SignUpForm(forms.ModelForm):
         return user
     class Meta:
         fields = ('username', 'email', 'password')
-        model = User
+        model = get_user_model()
 
 @schema.register
 class LoginForm(forms.Form):
@@ -79,7 +90,7 @@ class LoginForm(forms.Form):
     password = forms.CharField(label='Password', max_length=128, widget=forms.PasswordInput)
     def clean(self):
         username = self.cleaned_data['username']
-        user = User.objects.filter(username=username).first()
+        user = get_user_model().objects.filter(username=username).first()
         if user:
             if user.check_password(self.cleaned_data['password']):
                 self.user = user

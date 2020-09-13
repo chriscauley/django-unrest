@@ -35,6 +35,8 @@ def spa(request, *args, **kwargs):
 
 def favicon(request):
     path = finders.find(getattr(settings,'FAVICON','favicon.ico'))
+    if not path:
+        return HttpResponse(status=404)
     return serve(
         request,
         os.path.basename(path),

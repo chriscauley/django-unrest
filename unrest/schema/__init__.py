@@ -1,2 +1,2 @@
-from .views import register, FormResponse
+from .views import register
 from .utils import form_to_schema

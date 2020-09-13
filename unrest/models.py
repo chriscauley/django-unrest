@@ -3,7 +3,6 @@
 # review and decide which to keep
 
 from django.conf import settings
-from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.db.models.fields.files import ImageFieldFile
 
@@ -32,7 +31,7 @@ _hash = lambda data: hash(json.dumps(data,sort_keys=True))
 class JsonModel(models.Model, JsonMixin):
   created = models.DateTimeField(auto_now_add=True)
   data_hash = models.BigIntegerField()
-  data = JSONField(default=dict)
+  data = models.JSONField(default=dict)
   objects = RequestManager()
 
   def save(self,*args,**kwargs):
