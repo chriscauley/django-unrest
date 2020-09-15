@@ -81,3 +81,6 @@ def list_view(request,app_name,model_name):
     return JsonResponse({
         'results': [i.as_json for i in items],
     })
+
+def intentional_500(request, *args, **kwargs):
+    raise Exception("Intentional 500 error")
