@@ -48,7 +48,7 @@ def schema_form(request, form_name, object_id=None, method=None, content_type=No
             if instance:
                 data = {'id': instance.id, 'name': str(instance)}
             return JsonResponse(data)
-        return JsonResponse({'errors': form.errors.get_json_data()}, status_code=400)
+        return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
     schema = form_to_schema(form_class(**kwargs))
     return JsonResponse({'schema': schema})
 
