@@ -27,7 +27,7 @@ def signup_guest(request):
     while User.objects.filter(username=f'guest{rando}'):
         rando = random.randint(0, 100000)
     user = User.objects.create(username=f'guest{rando}')
-    login(request, user)
+    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
     return JsonResponse({})
 
 user_json.extras = []

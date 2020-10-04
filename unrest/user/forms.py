@@ -48,7 +48,7 @@ class SetPasswordForm(SetPasswordForm):
         user = super().save(commit)
         self.request.session.pop('reset-uidb64', None)
         self.request.session.pop('reset-token', None)
-        login(self.request, user)
+        login(self.request, user, backend='django.contrib.auth.backends.ModelBackend')
         return user
 
 def validate_unique(attribute, value, exclude={}):
@@ -78,7 +78,7 @@ class SignUpForm(forms.ModelForm):
         user.set_password(self.cleaned_data['password'])
         if commit:
             user.save()
-        login(self.request,  user)
+        login(self.request,  user, backend='django.contrib.auth.backends.ModelBackend')
         return user
     class Meta:
         fields = ('username', 'email', 'password')
@@ -97,4 +97,4 @@ class LoginForm(forms.Form):
                 return self.cleaned_data
         raise forms.ValidationError("Username and password do not match")
     def save(self, commit=True):
-        login(self.request, self.user)
+        login(self.request, self.user, backend='django.contrib.auth.backends.ModelBackend')

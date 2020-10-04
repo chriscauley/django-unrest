@@ -13,4 +13,8 @@ setup(
   keywords = ['utils','django'],
   license = 'MIT',
   include_package_data = True,
+  install_requires = [
+    'social-auth-app-django>=4.0.0',
+    'social-auth-core>=3.3.3'
+  ]
 )
