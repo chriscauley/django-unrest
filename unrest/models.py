@@ -69,8 +69,9 @@ class BaseModel(models.Model):
   class Meta:
     abstract = True
 
-  def to_json(self, attrs):
-    attrs = attrs or self.json_fields
+  def to_json(self, attrs=None):
+    if attrs == None:
+      attrs = self.json_fields
     result = {}
 
     for attr in attrs:
