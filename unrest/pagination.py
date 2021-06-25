@@ -3,7 +3,7 @@ import math
 noop = lambda i: i
 
 def paginate(items, per_page=10, process=noop, extra={}, query_dict={}):
-    page = int(query_dict.get('page', 1))
+    page = int(query_dict.get('page') or 1)
     offset = (page - 1) * per_page
     total = len(items)
     return {

@@ -1,13 +1,13 @@
 from django.conf import settings
 from django.urls import path, re_path, include
 
-from unrest.views import spa, favicon, intentional_500
+from unrest.views import index, favicon, intentional_500
 
 urlpatterns = [
     path('intentional_500/', intentional_500),
     path('favicon.ico', favicon),
-    re_path('^(?:login|logout|signup|reset-password|new)/', spa),
-    re_path('^$', spa),
+    re_path('^(?:login|logout|signup|reset-password|new)/', index),
+    re_path('^$', index),
     re_path('', include('unrest.user.urls')),
     re_path('', include('unrest.schema.urls')),
 ]

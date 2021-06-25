@@ -10,7 +10,8 @@ import subprocess
 import os
 
 @ensure_csrf_cookie
-def index(request, path='dist/index.html'):
+def index(request, *args, **kwargs):
+    path = kwargs.get('path', 'dist/index.html')
     response = serve(
         request,
         os.path.basename(path),
@@ -20,17 +21,9 @@ def index(request, path='dist/index.html'):
     response.set_cookie("GIT_HASH", _hash.decode('utf-8').strip())
     return response
 
-@ensure_csrf_cookie
+
 def spa(request, *args, **kwargs):
-    path = 'dist/index.html'
-    response = serve(
-        request,
-        os.path.basename(path),
-        os.path.dirname(path)
-    )
-    _hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
-    response.set_cookie("GIT_HASH", _hash.decode('utf-8').strip())
-    return response
+    raise Exception('Use index instead of spa')
 
 
 def favicon(request):
