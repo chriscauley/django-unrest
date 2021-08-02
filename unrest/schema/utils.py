@@ -94,6 +94,8 @@ def field_to_schema(field):
   # Set __django_form_field_cls keyword
   schema['__django_form_field_cls'] = field_type
   schema['__widget'] = field.widget.__class__.__name__
+  if isinstance(field.widget, forms.PasswordInput):
+    schema['format'] = 'password'
 
   return schema
 
