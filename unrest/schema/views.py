@@ -34,7 +34,24 @@ def schema_form(request, form_name, object_id=None, method=None, content_type=No
     if getattr(_meta, 'login_required', None) and not request.user.is_authenticated:
         return JsonResponse({'error': 'You must be logged in to do this'}, status=403)
 
+    def check_permission(permission):
+        instance = kwargs.get('instance')
+        f = getattr(form_class, 'user_can_' + permission, None)
+        print(f)
+        if f == 'SELF':
+            return request.user == instance
+        if f == 'OWN':
+            return request.user == instance.user
+        if f == 'ANY':
+            return True
+        return f and f(instance, request.user)
+
+    if kwargs.get('instance') and not check_permission('GET'):
+        return JsonResponse({'error': 'You do not have access to this resource'}, status=403)
+
     if request.method == "POST":
+        if not check_permission('POST'):
+            return JsonResponse({'error': 'You cannot edit this resource.'}, status=403)
         if content_type == 'application/json':
             data = json.loads(request.body.decode('utf-8') or "{}")
             form = form_class(data, **kwargs)

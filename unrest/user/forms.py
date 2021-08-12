@@ -21,6 +21,7 @@ def get_reset_user(uidb64, token):
 
 @schema.register
 class PasswordResetForm(PasswordResetForm):
+    user_can_POST = 'ANY'
     # the django password reset form uses a bunch of kwargs on save, making it very non-standard
     # we hack them in here so that this plays nice with the rest of the schema form flow
     def save(self, *args, **kwargs):
@@ -29,6 +30,7 @@ class PasswordResetForm(PasswordResetForm):
 
 @schema.register
 class SetPasswordForm(SetPasswordForm):
+    user_can_POST = 'ANY'
     # In django, token validation is done in the view and user is passed into the form
     # this does all that in clean instead to make it fit into schema form flow
     def __init__(self, *args, **kwargs):
@@ -61,6 +63,7 @@ def validate_unique(attribute, value, exclude={}):
 
 @schema.register
 class SignUpForm(forms.ModelForm):
+    user_can_POST = 'ANY'
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         del self.fields['username'].help_text
@@ -86,13 +89,18 @@ class SignUpForm(forms.ModelForm):
 
 @schema.register
 class LoginForm(forms.Form):
+    user_can_POST = 'ANY'
     username = forms.CharField(label='Username', max_length=150)
     password = forms.CharField(label='Password', max_length=128, widget=forms.PasswordInput)
     def clean(self):
-        username = self.cleaned_data['username']
-        user = get_user_model().objects.filter(username=username).first()
+        User = get_user_model()
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+        if not username and password:
+            return self.cleaned_data
+        user = User.objects.filter(username=username).first()
         if user:
-            if user.check_password(self.cleaned_data['password']):
+            if user.check_password(password):
                 self.user = user
                 return self.cleaned_data
         raise forms.ValidationError("Username and password do not match")
