@@ -96,8 +96,24 @@ def field_to_schema(field):
   schema['__widget'] = field.widget.__class__.__name__
   if isinstance(field.widget, forms.PasswordInput):
     schema['format'] = 'password'
+  if isinstance(field.widget, forms.HiddenInput):
+    schema['format'] = 'hidden'
 
   return schema
+
+
+def get_default_value(form, name):
+  value = getattr(form.instance, name)
+  if isinstance(value, ImageFieldFile):
+    if not value:
+      return
+    else:
+      value = value.url
+  if hasattr(value, 'pk'):
+    value = value.pk
+  if form.fields[name].__class__.__name__ == 'ModelMultipleChoiceField':
+    value = [obj.id for obj in value.all()]
+  return value
 
 
 def form_to_schema(form):
@@ -115,17 +131,9 @@ def form_to_schema(form):
       schema['required'].append(name)
     if getattr(form, 'instance', None):
       if hasattr(form.instance, name) and getattr(form.instance, name) != None:
-        value = getattr(form.instance, name)
-        if isinstance(value, ImageFieldFile):
-          if not value:
-            continue #empty file field, ignore
-          else:
-            value = value.url
-        if hasattr(value, 'pk'):
-          value = value.pk
-        if field.__class__.__name__ == 'ModelMultipleChoiceField':
-          value = [obj.id for obj in value.all()]
-        schema['properties'][name]['default'] = value
+        value = get_default_value(form, name)
+        if value != None:
+          schema['properties'][name]['default'] = value
 
   if hasattr(form, 'form_title'):
     schema['title'] = form.form_title
