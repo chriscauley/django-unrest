@@ -39,7 +39,7 @@ def favicon(request):
 def redirect(request,url=None):
     return HttpResponseRedirect(url)
 
-def superuser_api_view(request,app_name,model_name):
+def superuser_api_view(request, app_name, model_name):
     app = apps.get_app_config(app_name)
     model = app.get_model(model_name)
     data = json.loads(request.body.decode('utf-8') or "{}")
@@ -58,7 +58,7 @@ def superuser_api_view(request,app_name,model_name):
     return JsonResponse(obj.as_json)
 
 
-def list_view(request,app_name,model_name):
+def list_view(request, app_name, model_name):
     app = apps.get_app_config(app_name)
     model = app.get_model(model_name)
     data = json.loads(request.body.decode('utf-8') or "{}")
