@@ -1,10 +1,14 @@
 import random
 
+from django.conf import settings
 from django import forms
 from django.contrib.auth import login, get_user_model
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
+from django_registration.forms import RegistrationFormUniqueEmail
+from django_registration.backends.activation.views import RegistrationView
+from django_registration import validators
 
 from unrest import schema
 
@@ -53,39 +57,39 @@ class SetPasswordForm(SetPasswordForm):
         login(self.request, user, backend='django.contrib.auth.backends.ModelBackend')
         return user
 
-def validate_unique(attribute, value, exclude={}):
-    users = get_user_model().objects.filter(**{attribute: value})
-    if exclude:
-        users = users.exclude(**exclude)
-    user = users.first()
-    if user:
-        raise forms.ValidationError(f'A user with this {attribute} already exists.')
-
 @schema.register
-class SignUpForm(forms.ModelForm):
+class SignUpForm(RegistrationFormUniqueEmail):
+    password1 = forms.CharField(label='Password', max_length=128, widget=forms.PasswordInput)
     user_can_POST = 'ANY'
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        del self.fields['username'].help_text
-        self.fields['email'].required = True
-    def clean_username(self):
-        username = self.cleaned_data['username']
-        validate_unique('username', username)
-        return username
-    def clean_email(self):
-        email = self.cleaned_data['email']
-        validate_unique('email', email)
-        return email
-    def save(self, commit=True):
-        user = super().save(commit)
-        user.set_password(self.cleaned_data['password'])
-        if commit:
-            user.save()
-        login(self.request,  user, backend='django.contrib.auth.backends.ModelBackend')
-        return user
-    class Meta:
-        fields = ('username', 'email', 'password')
+        self.fields['username'].help_text = None
+        self.fields['password1'].help_text = None
+        self.fields.pop('password2')
+    def clean(self, *args, **kwargs):
+        self.cleaned_data['password2'] = self.cleaned_data.get('password1')
+        super().clean()
+    class Meta(RegistrationFormUniqueEmail.Meta):
         model = get_user_model()
+        fields = ['username', 'email', 'password1']
+
+    def save(self, commit=False):
+        user = super().save(commit=False)
+
+        if getattr(settings, 'UNREST_VERIFY_EMAIL', None):
+            # use django_registration to send email to user
+            user.is_active = False
+
+            view = RegistrationView()
+            view.request = self.request
+            view.send_activation_email(user)
+            user.save()
+        else:
+            user.save()
+            login(self.request,  user, backend='django.contrib.auth.backends.ModelBackend')
+
+        return user
+
 
 @schema.register
 class LoginForm(forms.Form):
@@ -103,6 +107,28 @@ class LoginForm(forms.Form):
             if user.check_password(password):
                 self.user = user
                 return self.cleaned_data
-        raise forms.ValidationError("Username and password do not match")
+        raise forms.ValidationError("Username and password do not match", code='password_mismatch')
     def save(self, commit=True):
         login(self.request, self.user, backend='django.contrib.auth.backends.ModelBackend')
+
+
+@schema.register
+class UserSettingsForm(forms.ModelForm):
+    user_can_GET = 'self'
+    user_can_POST = 'self'
+    def clean_username(self):
+        value = self.cleaned_data.get('username')
+        if value != self.request.user.username:
+            error_message = 'Another user has this username.'
+            validators.validate_unique(get_user_model(), 'username', error_message)(value)
+        validators.ReservedNameValidator()(value)
+        return value
+    def clean_email(self):
+        value = self.cleaned_data.get('email')
+        if value != self.request.user.email:
+            error_message = 'Another user has this email.'
+            validators.validate_unique(get_user_model(), 'email', error_message)(value)
+        return value
+    class Meta:
+        model = get_user_model()
+        fields = getattr(settings, 'UNREST_USER_SETTINGS_FIELDS', ['username', 'email'])
