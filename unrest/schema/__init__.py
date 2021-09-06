@@ -1,2 +1,2 @@
-from .views import register, unregister, register_admin
+from .views import register, unregister
 from .utils import form_to_schema

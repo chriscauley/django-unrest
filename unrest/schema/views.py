@@ -1,5 +1,7 @@
 from django.http import JsonResponse, Http404
+from django.contrib import admin
 from django.contrib.auth import get_user_model
+from django import forms
 
 import json
 import re
@@ -13,15 +15,6 @@ def clean_form_name(form_name):
     form_name = form_name
     form_name = re.sub(r'(?<!^)(?=[A-Z])', '-', form_name).lower()
     return re.sub(r'-form$', '', form_name)
-
-
-def register_admin(admin, form_name=None):
-    print(form_name, admin)
-    if isinstance(admin, str):
-        # register is being used as a decorator and args are curried and reversed
-        return lambda actual_admin: register_admin(actual_admin, form_name=admin)
-    register(admin.form, form_name)
-    return admin
 
 
 def register(form, form_name=None):
@@ -42,22 +35,21 @@ def unregister(form_name):
     FORMS.pop(clean_form_name(form_name), None)
 
 
-def schema_form(request, form_name, object_id=None, method=None, content_type=None):
-    form_name = clean_form_name(form_name)
-    if form_name.endswith('-form'):
-        raise DeprecationError('Schema forms should no longer end in "Form" or "-form"')
-    if not form_name in FORMS:
-        raise Http404(f"Form with name {form_name} does not exist")
-
+def schema_form(request, form_class, object_id=None, method=None, content_type=None, model=None):
+    if type(form_class) == str:
+        if form_class.endswith('-form'):
+            raise DeprecationError('Schema forms should no longer end in "Form" or "-form"')
+        if not form_class in FORMS:
+            raise Http404(f"Form with name {form_class} does not exist")
+        form_class = FORMS[form_class]
     method = method or request.method
     content_type = content_type or request.headers.get('Content-Type', None)
-    form_class = FORMS[form_name]
     _meta  = getattr(form_class, 'Meta', object())
+    if hasattr(_meta, 'model'):
+        model = _meta.model
     kwargs = {}
-    print(object_id)
-    if object_id and hasattr(_meta, 'model'):
-        print('wtf')
-        kwargs['instance'] = _meta.model.objects.get(id=object_id)
+    if object_id:
+        kwargs['instance'] = model.objects.get(id=object_id)
     if getattr(_meta, 'login_required', None) and not request.user.is_authenticated:
         return JsonResponse({'error': 'You must be logged in to do this'}, status=403)
 
@@ -112,7 +104,7 @@ def schema_form(request, form_name, object_id=None, method=None, content_type=No
     def process(instance):
         out = { 'id': instance.id }
         form = form_class(instance=instance)
-        for field_name in form.fields:
+        for field_name in form.Meta.fields:
             out[field_name] = get_default_value(form, field_name)
         return out
 
@@ -123,11 +115,46 @@ def schema_form(request, form_name, object_id=None, method=None, content_type=No
     # defaults to /api/schema/MODEL/
     if not check_permission('LIST'):
         return JsonResponse({'error': 'You do not have access to this resource'}, status=403)
-    model = _meta.model
     if model.__name__ == 'User':
         model = get_user_model()
     query = model.objects.all()
     return JsonResponse(paginate(query, process=process, query_dict=request.GET))
 
 
+def get_model_and_admin(app_label, model_name):
+    for model, admin_options in admin.site._registry.items():
+        if model._meta.app_label == app_label and model._meta.model_name == model_name:
+            return [model, admin_options]
 
+
+def admin_form(request, app_label='', model_name='', object_id=None):
+    [_model, admin] = get_model_and_admin(app_label, model_name)
+    form = admin.get_form(request, None, fields=None)
+    _fields = [*form.base_fields, *admin.get_readonly_fields(request, None)]
+    class Form(forms.ModelForm):
+        class Meta:
+            model = _model
+            fields = _fields
+    return schema_form(request, Form, object_id=object_id, model=_model)
+
+
+def admin_index(request):
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'You do not have access to this resource'}, status=403)
+    apps = {}
+    for model, admin_options in admin.site._registry.items():
+        app_label = model._meta.app_label
+        model_name = model._meta.model_name
+        if app_label not in apps:
+            apps[app_label] = {
+                'app_label': app_label,
+                'models': [],
+            }
+        apps[app_label]['models'].append({
+            'verbose': model._meta.verbose_name,
+            'verbose_plural': model._meta.verbose_name_plural,
+            'app_label': app_label,
+            'model_name': model_name,
+            'count': model.objects.all().count(),
+        })
+    return JsonResponse({ 'apps': apps })
