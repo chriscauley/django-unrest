@@ -38,7 +38,7 @@ def unregister(form_name):
 def schema_form(request, form_class, object_id=None, method=None, content_type=None, model=None):
     if type(form_class) == str:
         if form_class.endswith('-form'):
-            raise DeprecationError('Schema forms should no longer end in "Form" or "-form"')
+            raise ValueError('Schema forms should no longer end in "Form" or "-form"')
         if not form_class in FORMS:
             raise Http404(f"Form with name {form_class} does not exist")
         form_class = FORMS[form_class]
@@ -110,7 +110,7 @@ def schema_form(request, form_class, object_id=None, method=None, content_type=N
 
     if kwargs.get('instance'):
         # /api/schema/MODEL/PK/
-        return JsonResponse(process(form_class(**kwargs)))
+        return JsonResponse(process(form_class(**kwargs).instance))
 
     # defaults to /api/schema/MODEL/
     if not check_permission('LIST'):

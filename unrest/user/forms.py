@@ -6,9 +6,15 @@ from django.contrib.auth import login, get_user_model
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
-from django_registration.forms import RegistrationFormUniqueEmail
-from django_registration.backends.activation.views import RegistrationView
-from django_registration import validators
+
+if 'django_registration' in settings.INSTALLED_APPS:
+    from django_registration.forms import RegistrationFormUniqueEmail
+    from django_registration.backends.activation.views import RegistrationView
+    from django_registration import validators
+else:
+    class RegistrationFormUniqueEmail(forms.ModelForm):
+        class Meta:
+            pass
 
 from unrest import schema
 
