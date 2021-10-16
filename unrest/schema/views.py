@@ -1,4 +1,4 @@
-from django.http import JsonResponse, Http404
+from django.http import Http404
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django import forms
@@ -6,6 +6,7 @@ from django import forms
 import json
 import re
 from ..pagination import paginate
+from .http import JsonResponse
 from .utils import form_to_schema, get_default_value
 
 FORMS = {}
