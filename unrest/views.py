@@ -4,14 +4,14 @@ from django.contrib.staticfiles import finders
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.static import serve
-
+from django.middleware.csrf import get_token
 import json
 import subprocess
 import os
 
 @ensure_csrf_cookie
 def index(request, *args, **kwargs):
-    path = kwargs.get('path', 'dist/index.html')
+    path = kwargs.get('path', finders.find('index.html'))
     response = serve(
         request,
         os.path.basename(path),
@@ -20,6 +20,10 @@ def index(request, *args, **kwargs):
     _hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
     response.set_cookie("GIT_HASH", _hash.decode('utf-8').strip())
     return response
+
+@ensure_csrf_cookie
+def get_csrf(request):
+    return HttpResponse(get_token(request))
 
 
 def spa(request, *args, **kwargs):

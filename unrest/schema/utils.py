@@ -103,6 +103,8 @@ def field_to_schema(field):
 
 
 def get_default_value(form, name):
+  if form.fields[name].__class__.__name__ == 'ModelChoiceField':
+    return getattr(form.instance, name + '_id')
   value = getattr(form.instance, name)
   if isinstance(value, ImageFieldFile):
     if not value:

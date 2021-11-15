@@ -38,7 +38,7 @@ def unregister(form_name):
 
 def schema_form(request, form_class, object_id=None, method=None, content_type=None, model=None):
     if type(form_class) == str:
-        if form_class.endswith('-form'):
+        if form_class.endswith('-form') or form_class.endswith('Form'):
             raise ValueError('Schema forms should no longer end in "Form" or "-form"')
         if not form_class in FORMS:
             raise Http404(f"Form with name {form_class} does not exist")
@@ -52,6 +52,7 @@ def schema_form(request, form_class, object_id=None, method=None, content_type=N
     if object_id:
         kwargs['instance'] = model.objects.get(id=object_id)
     if getattr(_meta, 'login_required', None) and not request.user.is_authenticated:
+        print("DEPRECATION WARNING: user form.user_can_METHOD = 'AUTH' instead of meta option.")
         return JsonResponse({'error': 'You must be logged in to do this'}, status=403)
 
     def check_permission(permission):
@@ -63,7 +64,12 @@ def schema_form(request, form_class, object_id=None, method=None, content_type=N
             return request.user == instance
         if f == 'OWN':
             return request.user == instance.user
+        if f == 'ALL':
+            return True
+        if f == 'AUTH':
+            return request.user.is_authenticated
         if f == 'ANY':
+            print("DEPRECATION WARNING: user_can_METHOD='ANY' should be 'ALL' or 'AUTH'")
             return True
         return f and f(instance, request.user)
 
@@ -119,7 +125,12 @@ def schema_form(request, form_class, object_id=None, method=None, content_type=N
     if model.__name__ == 'User':
         model = get_user_model()
     query = model.objects.all()
-    return JsonResponse(paginate(query, process=process, query_dict=request.GET))
+    # TODO this should be explicit like form_class.filter_fields or similar
+    for field_name in form_class.Meta.fields:
+        if field_name in request.GET:
+            query = query.filter(**{field_name: request.GET[field_name]})
+    response = JsonResponse(paginate(query, process=process, query_dict=request.GET))
+    return response
 
 
 def get_model_and_admin(app_label, model_name):
