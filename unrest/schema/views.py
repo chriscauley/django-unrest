@@ -113,6 +113,9 @@ def schema_form(request, form_class, object_id=None, method=None, content_type=N
         form = form_class(instance=instance)
         for field_name in form.Meta.fields:
             out[field_name] = get_default_value(form, field_name)
+        for field_name in getattr(form, 'readonly_fields', []):
+            # TODO should this be on the model or the form?
+            out[field_name] = getattr(instance, field_name)
         return out
 
     if kwargs.get('instance'):
