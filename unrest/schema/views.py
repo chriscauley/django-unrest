@@ -75,8 +75,10 @@ def schema_form(request, form_class, object_id=None, method=None, content_type=N
 
     if request.method == "POST" or request.method == "PUT":
         # POST/PUT /api/schema/MODEL/ or /api/schema/MODEL/PK/
-        if not check_permission('POST'):
+        if kwargs.get('instance') and not check_permission('PUT'):
             return JsonResponse({'error': 'You cannot edit this resource.'}, status=403)
+        if not kwargs.get('instance') and not check_permission('POST'):
+            return JsonResponse({'error': 'You cannot create this resource.'}, status=403)
         if content_type == 'application/json':
             data = json.loads(request.body.decode('utf-8') or "{}")
             form = form_class(data, **kwargs)
