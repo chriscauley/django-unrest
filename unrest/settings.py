@@ -6,7 +6,7 @@ import os
 from django.core.management.utils import get_random_secret_key
 
 def get_secret_key(BASE_DIR):
-    key_path = os.path.join(BASE_DIR, 'settings', '.secret_key')
+    key_path = os.path.join(BASE_DIR, '.secret_key')
     if os.path.exists(key_path):
         with open(key_path, 'r') as f:
             SECRET_KEY = f.read()
