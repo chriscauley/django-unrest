@@ -134,6 +134,9 @@ def schema_form(request, form_class, object_id=None, method=None, content_type=N
     for field_name in form_class.Meta.fields:
         if field_name in request.GET:
             query = query.filter(**{field_name: request.GET[field_name]})
+    for field_name in getattr(form_class, 'filter_fields', None) or []:
+        if field_name in request.GET:
+            query = query.filter(**{field_name: request.GET[field_name]})
     response = JsonResponse(paginate(query, process=process, query_dict=request.GET))
     return response
 

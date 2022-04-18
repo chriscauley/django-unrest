@@ -24,9 +24,9 @@ KEYWORDS = {
 FIELD_TO_TYPE = {
   'IntegerField': 'integer',
   'BooleanField': 'boolean',
-  'BooleanField': 'number',
   'TypedChoiceField': '',
   'ModelChoiceField': 'integer',
+  'JSONField': 'object',
 }
 
 # django fields to rjsf formats
@@ -41,6 +41,9 @@ def field_to_schema(field):
   schema = {
     'type': FIELD_TO_TYPE.get(field_type, 'string'),
   }
+
+  if schema['type'] == 'object':
+    schema['properties'] = {}
 
   if not schema['type']:
     #currently only supported for TypedChoiceField
