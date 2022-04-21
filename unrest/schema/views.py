@@ -11,7 +11,6 @@ from .utils import form_to_schema, get_default_value
 
 FORMS = {}
 
-
 def clean_form_name(form_name):
     form_name = form_name
     form_name = re.sub(r'(?<!^)(?=[A-Z])', '-', form_name).lower()
@@ -41,7 +40,8 @@ def schema_form(request, form_class, object_id=None, method=None, content_type=N
         if form_class.endswith('-form') or form_class.endswith('Form'):
             raise ValueError('Schema forms should no longer end in "Form" or "-form"')
         if not form_class in FORMS:
-            raise Http404(f"Form with name {form_class} does not exist")
+            keys = '\n'.join(FORMS.keys())
+            raise Http404(f"Form with name {form_class} does not exist in: \n{keys}")
         form_class = FORMS[form_class]
     method = method or request.method
     content_type = content_type or request.headers.get('Content-Type', None)
