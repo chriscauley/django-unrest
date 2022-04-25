@@ -120,8 +120,8 @@ class LoginForm(forms.Form):
 
 @schema.register
 class UserSettingsForm(forms.ModelForm):
-    user_can_GET = 'self'
-    user_can_PUT = 'self'
+    user_can_GET = 'SELF'
+    user_can_PUT = 'SELF'
     def clean_username(self):
         value = self.cleaned_data.get('username')
         if value != self.request.user.username:
