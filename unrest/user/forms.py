@@ -16,7 +16,7 @@ else:
         class Meta:
             pass
 
-from unrest import schema
+import unrest_schema
 
 def get_reset_user(uidb64, token):
     User = get_user_model()
@@ -29,7 +29,7 @@ def get_reset_user(uidb64, token):
     if default_token_generator.check_token(user, token):
         return user
 
-@schema.register
+@unrest_schema.register
 class PasswordResetForm(PasswordResetForm):
     user_can_POST = 'ANY'
     # the django password reset form uses a bunch of kwargs on save, making it very non-standard
@@ -38,7 +38,7 @@ class PasswordResetForm(PasswordResetForm):
         kwargs['request'] = self.request
         return super().save(*args, **kwargs)
 
-@schema.register
+@unrest_schema.register
 class SetPasswordForm(SetPasswordForm):
     user_can_POST = 'ANY'
     # In django, token validation is done in the view and user is passed into the form
@@ -63,7 +63,7 @@ class SetPasswordForm(SetPasswordForm):
         login(self.request, user, backend='django.contrib.auth.backends.ModelBackend')
         return user
 
-@schema.register
+@unrest_schema.register
 class SignUpForm(RegistrationFormUniqueEmail):
     password1 = forms.CharField(label='Password', max_length=128, widget=forms.PasswordInput)
     user_can_POST = 'ANY'
@@ -97,7 +97,7 @@ class SignUpForm(RegistrationFormUniqueEmail):
         return user
 
 
-@schema.register
+@unrest_schema.register
 class LoginForm(forms.Form):
     user_can_POST = 'ANY'
     username = forms.CharField(label='Username', max_length=150)
@@ -118,7 +118,7 @@ class LoginForm(forms.Form):
         login(self.request, self.user, backend='django.contrib.auth.backends.ModelBackend')
 
 
-@schema.register
+@unrest_schema.register
 class UserSettingsForm(forms.ModelForm):
     user_can_GET = 'SELF'
     user_can_PUT = 'SELF'

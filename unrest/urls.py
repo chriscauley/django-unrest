@@ -9,7 +9,7 @@ urlpatterns = [
     re_path('^(?:login|logout|signup|reset-password|new)/', index),
     re_path('^$', index),
     re_path('', include('unrest.user.urls')),
-    re_path('', include('unrest.schema.urls')),
+    re_path('', include('unrest_schema.urls')),
 ]
 
 if settings.DEBUG:  # pragma: no cover
