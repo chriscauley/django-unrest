@@ -17,6 +17,7 @@ def mkdir(root, *args):
 
 class JsonCache(dict):
     def __init__(self, path, *args, **kwargs):
+        self.encoder = kwargs.pop('__encoder__', json.JSONEncoder)
         super().__init__(*args, **kwargs)
         self._path = path
         if os.path.exists(self._path):
@@ -31,7 +32,7 @@ class JsonCache(dict):
         self._save()
     def _save(self):
         with open(self._path, 'w') as f:
-            f.write(json.dumps(self, indent=2))
+            f.write(json.dumps(self, indent=2, cls=self.encoder))
 
 def _ms(seconds):
     if seconds <10:
