@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class NopasswordConfig(AppConfig):
-    name = 'nopass'
+class NopassConfig(AppConfig):
+    name = 'unrest.nopass'
