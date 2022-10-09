@@ -1,6 +1,9 @@
 from functools import wraps
 import os
 import json
+import random
+import requests
+import shutil
 import time
 
 def mkdir(root, *args):
@@ -18,6 +21,7 @@ def mkdir(root, *args):
 class JsonCache(dict):
     def __init__(self, path, *args, **kwargs):
         self.encoder = kwargs.pop('__encoder__', json.JSONEncoder)
+        self.__locked = False
         super().__init__(*args, **kwargs)
         self._path = path
         if os.path.exists(self._path):
@@ -31,8 +35,13 @@ class JsonCache(dict):
             super().__setitem__(key, value)
         self._save()
     def _save(self):
-        with open(self._path, 'w') as f:
+        if self.__locked:
+            # dict can be locked so it isn't overwritten
+            return
+        tmp_path = '/tmp/{random.random()}'
+        with open(tmp_path, 'w') as f:
             f.write(json.dumps(self, indent=2, cls=self.encoder))
+        shutil.move(tmp_path, self._path)
 
 def _ms(seconds):
     if seconds <10:
@@ -78,3 +87,22 @@ class Ticker:
         #     self.name = new_name
         #     self.counts = 0
         print(s)
+
+
+def curl(url, force=False, cache_dir='.cache'):
+    domain, url_path = url.split('//')[-1].split('/', 1)
+    url_path = url_path.replace('/', '__')
+    domain_dir = os.path.join(cache_dir, domain)
+    file_path = os.path.join(domain_dir, url_path)
+    if force or not os.path.exists(file_path):
+        if not os.path.exists(cache_dir):
+            os.mkdir(cache_dir)
+        if not os.path.exists(domain_dir):
+            os.mkdir(domain_dir)
+        with open(file_path, 'w') as f:
+            response = requests.get(url)
+            response.raise_for_status()
+            f.write(response.text)
+            print('curl downloaded', url)
+    with open(file_path, 'r') as f:
+        return f.read()
