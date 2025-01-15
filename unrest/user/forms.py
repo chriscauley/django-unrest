@@ -12,9 +12,7 @@ if 'django_registration' in settings.INSTALLED_APPS:
     from django_registration.backends.activation.views import RegistrationView
     from django_registration import validators
 else:
-    class RegistrationFormUniqueEmail(forms.ModelForm):
-        class Meta:
-            pass
+    from django.contrib.auth.forms import UserCreationForm as RegistrationFormUniqueEmail
 
 import unrest_schema
 

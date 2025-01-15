@@ -21,7 +21,7 @@ def user_json(request):
 
 def signup_guest(request):
     if not getattr(settings, 'UNREST_ALLOW_GUEST', False):
-        return JsonResponse(status=400)
+        return JsonResponse({}, status=400)
     User = get_user_model()
     rando = random.randint(0, 100000)
     while User.objects.filter(username=f'guest{rando}'):

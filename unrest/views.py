@@ -6,7 +6,6 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.static import serve
 from django.middleware.csrf import get_token
 import json
-import subprocess
 import os
 
 @ensure_csrf_cookie
@@ -17,8 +16,6 @@ def index(request, *args, **kwargs):
         os.path.basename(path),
         os.path.dirname(path)
     )
-    _hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
-    response.set_cookie("GIT_HASH", _hash.decode('utf-8').strip())
     return response
 
 @ensure_csrf_cookie
